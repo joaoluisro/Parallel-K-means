@@ -1,5 +1,5 @@
 make
-path="input/"
+path="../input/"
 i=1
 for file in "10x1M.txt"
 do
