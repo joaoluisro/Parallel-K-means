@@ -42,32 +42,32 @@ int main(void) {
 		for (j = 0; j < k; j++) count[j] = 0;
 
 		#pragma omp parallel for
-		for(j = 0; j < k * DIM; j++)sum[j] = 0.0;
+		for(j = 0; j < k * DIM; j++) sum[j] = 0.0;
 
+		#pragma omp parallel for private(dmin, dx, color, c, j)
+		for (i = 0; i < n; i++) {
+			dmin = -1;
+			color = cluster[i];
 
-		#pragma omp parallel for private(dmin, dx, color) reduction(+:flips)
-			for (i = 0; i < n; i++) {
-				dmin = -1;
-				color = cluster[i];
+			for (c = 0; c < k; c++) {
+				dx = 0.0;
 
-				for (c = 0; c < k; c++) {
-					dx = 0.0;
+				for (j = 0; j < DIM; j++)
+					dx +=  (x[i*DIM+j] - mean[c*DIM+j])*(x[i*DIM+j] - mean[c*DIM+j]);
 
-					for (j = 0; j < DIM; j++)
-						dx +=  (x[i*DIM+j] - mean[c*DIM+j])*(x[i*DIM+j] - mean[c*DIM+j]);
-
-					if (dx < dmin || dmin == -1) {
-						color = c;
-						dmin = dx;
-					}
+				if (dx < dmin || dmin == -1) {
+					color = c;
+					dmin = dx;
 				}
-
-				if (cluster[i] != color) {
-					flips += 1;
-					cluster[i] = color;
-		  	}
-				
 			}
+
+			if (cluster[i] != color) {
+				flips += 1;
+				cluster[i] = color;
+		  }
+
+		}
+
 
 		// count armazena o número de elementos em cada cluster j
 		for (i = 0; i < n; i++) {
@@ -76,14 +76,18 @@ int main(void) {
 			// sum armazena a soma de cada componente de x em um dado cluster
 			for (j = 0; j < DIM; j++)
 				sum[cluster[i]*DIM+j] += x[i*DIM+j];
-			}
+		}
+
 
 		// calcula a média de cada cluster
+		#pragma omp parallel for collapse(2)
 		for (i = 0; i < k; i++) {
 			for (j = 0; j < DIM; j++) {
 				mean[i*DIM+j] = sum[i*DIM+j]/count[i];
 	  	}
 		}
+
+
 	}
 
 
